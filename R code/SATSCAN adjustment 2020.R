@@ -1,0 +1,43 @@
+#############################################
+# SaTScan analysis for NY leukemia data
+#############################################
+
+#read in data
+d1<-read.csv("./Data/MANHATTAN SUBSET CANCER.csv")
+
+#run Poisson regression where outcome is observed cases in each census block, predictor is household size, offset is e_breast (age/sex adjusted expected cases)
+
+mod1<-glm(OBREAST~HH_SIZE, 
+          family="poisson", 
+          offset=log(EBREAST), #Denominator that adjusts for Age/sex distribution 
+          data=d1) #Fit model
+
+
+summary(mod1) #Summarize output
+
+#Generate fitted values
+d1$pred_cases_breast<-predict(mod1, newdata=d1, type="response")
+
+trans.blue<- rgb(0,0,1, alpha=0.2)
+#Compare values adjusted with EBREAT vs our model fit
+plot(d1$HH_SIZE, log(d1$OBREAST/d1$EBREAST), bty='l', pch=16, col=trans.blue) #Plot RR for adjusting for age/sex vs RR when adjusting for age/sex/SES
+abline(a=0.6823, b=-0.30, col='red')
+
+#Observed vs expected
+plot(log(d1$pred_cases_breast), log(d1$OBREAST), bty='l', pch=16, col=trans.blue) #Plot RR for adjusting for age/sex vs RR when adjusting for age/sex/SES
+abline(a=0, b=1, col='red', lty=2)
+
+#Residuals
+plot(d1$OBREAST/d1$pred_cases_breast, bty='l', pch=16, col=trans.blue)
+abline(h=1, lty=2, col='red')
+
+write.csv(d1,'./Data/MANHATTAN SUBSET CANCER adj.csv')
+
+# ## Make a map of the adjusted incidence
+# library(sf)
+# my_spdf <- read_sf( 
+#   dsn= "./Data/NYC shape/" , 
+#   layer="geo_export_8ed29200-00aa-463a-9102-87f837197278",
+#   verbose=FALSE
+# )
+
